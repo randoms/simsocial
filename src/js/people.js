@@ -70,7 +70,7 @@ define(function(){
     for(var i=0; i<3; i++){
       for(var j=0; j<3;j++){
         var targetPlace = this.world.grid[i+this.posX-1][j+this.posY-1];
-        if(i=1 && j=1)continue; // it's himself
+        if(i==1 && j==1)continue; // it's himself
         this.nearby.push(targetPlace);
       }
     }

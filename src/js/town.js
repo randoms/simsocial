@@ -40,7 +40,7 @@ define(function(){
 
   function Job(from, to, income, type){
 
-    this.type = type ;
+    this.type = type;
     this.income = income;
     this.from = from;
     this.to = to;
@@ -61,7 +61,7 @@ define(function(){
   }
 
   return {
-    'town': town,
+    'Town': Town,
   }
 })
 

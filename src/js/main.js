@@ -22,7 +22,7 @@ require(['world', 'town', 'people'], function(World, Town, People){
 
   var mworld = new World.World(context);
   new World.Tree(mworld, 10, 10);
-  new World.TallTree(mworld, 10, 20);
+  new World.TallTree(mworld, 20, 10);
   //new People.People(mworld, 15, 15, "Adward");
 
 

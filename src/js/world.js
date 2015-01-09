@@ -54,13 +54,6 @@ define(['jquery', 'Chart'], function($, Chart){
     // 应该考虑生物对环境的影响，经常生长植物就会使土地增肥， 反之如果一直没有植物生长就会使土地流失
     // 随机生成大块无植物土地，作为城市起始
     // 生成四个边界
-    var leftTopX = parseInt(Math.random()*(this.gridMaxX-6));
-    var leftTopY = parseInt(Math.random()*(this.gridMaxY-6));
-    for(var i=0;i<6;i++){
-      for(var j=0;j<6;j++){
-        new Stone(this, leftTopX+i,leftTopY + j);
-      }
-    }
 
     this.statisticRes = [];
     this.statisticRes[0] = [];
@@ -294,9 +287,21 @@ define(['jquery', 'Chart'], function($, Chart){
           new this.growBlock(this.world, randomsPos.posX + this.posX -1, randomsPos.posY + this.posY -1, this);
         }
       }
+    }
 
-      // 
-
+    this.getRecord = function(){
+      return {
+        'type': this.type,
+        'durability': this.durability,
+        'growStatus': this.growStatus,
+        'growth': this.growth,
+        'tear': this.tear,
+        'collectRate': this.collectRate,
+        'growRate': this.growRate,
+        'improveRate': this.improveRate,
+        'degradeBlock': this.degradeBlock,
+        'growBlock': this.growBlock,
+      }
     }
   }
 

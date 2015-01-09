@@ -1,18 +1,25 @@
-define(function(){
+define(['world'], function(World){
 
-  function People(world, posX, posY, name){
+  function People(world, posX, posY, name, gene){
 
     // basic property
     this.name = name;
-    if(Math.random() > 0.5)this.gender = "male";
-    else this.gender = "female";
+    this.gene = gene|| new World.Gene();
+    this.geneGender = this.gene.getPhenotype("gender");
+    if(this.geneGender >= 0.5){
+      this.gender = "male";
+      this.background = '../img/male.svg';
+    }else{
+      this.gender = "female";
+      this.background = '../img/female.svg';
+    }
+
     this.age = 0;
 
     // world related
     this.world = world;
     this.posX = posX;
     this.posY = posY;
-    this.background = "../img/people.png"
     this.direction = 0; // 0 up 1 right 2 down 3 left
     world.grid[posX][posY].people = this;
     world.grid[posX][posY].hasPeople = true;
@@ -23,14 +30,19 @@ define(function(){
     this.incomeItems = [];
     this.outcomeItems = [];
     this.breads = 0;
-    this.job = [];
+    this.jobs = [];
     this.town = {};
 
 
     // personality
-    this.meanness = Math.random();
-    this.braveNess = Math.random();
-    this.friendNess = Math.random();
+    this.geneMeanNess = this.gene.getPhenotype("meanness");
+    this.geneBraveNess = this.gene.getPhenotype("braveness");
+    this.geneFriendNess = this.gene.getPhenotype("friendness");
+    this.geneAffectNess = this.gene.getPhenotype("affectness"); // the ablity to affect others, just like environment improvement
+    this.geneCleverNess = this.gene.getPhenotype("cleverness");
+    this.geneEnvironment = this.gene.getPhenotype("environment");
+
+    //this.cleverness = 
 
     // relation related
     this.friends = [] // enemy also in this list
@@ -44,25 +56,28 @@ define(function(){
     // nearby
     this.nearby = []; // the 8 near blocks
 
-    this.update = function(){
-      if(this.date == this.world.date)return;
-      this.date = this.world.date;
-      // draw user image
-      var context = this.world.context;
+    this.drawImage = function(){
+
       var mimg = new Image();
       var that = this;
       mimg.onload = function(){
-        var sourceX = 5;
-        var sourceY = 2;
-        var sourceWidth = 24;
-        var sourceHeight = 33;
-        var destWidth = 16;
-        var destHeight = 16;
-        var destX = that.posX*20 + 10 + 2;
-        var destY = that.posY*20 + 10 + 2;
-        context.drawImage(mimg, sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight);
+        // clear previous block
+        var context = that.world.context;
+        context.beginPath();
+        context.rect(that.posX*20+10+2, that.posY*20 +10 +2, 16, 16);
+        context.fillStyle = '#FFFFFF';
+        context.fill();
+        context.drawImage(mimg, that.posX*20+10+2, that.posY*20 +10 +2, 16, 16); // padding 2px;
       }
       mimg.src = this.background;
+    }
+
+    this.drawImage();
+
+    this.update = function(){
+      if(this.date == this.world.date)return;
+      this.date = this.world.date;
+      if(this.jobs.length != 0)this.jobs[0].work();
     }
 
     // update neighbor
@@ -81,7 +96,47 @@ define(function(){
 
     // action related
     this.move = function(pos){
+      var currentPos = this.world.grid[this.posX][this.posY];
+      switch(pos){
+        case "up":{
+          if(this.posY <= 0)break;
+          var targetPos = this.world.grid[this.posX][this.posY-1];
+          moveToTarget(targetPos,currentPos);
+          break;
+        }
+        case "right":{
+          if(this.posX >= this.world.gridMaxX-1)break;
+          var targetPos = this.world.grid[this.posX+1][this.posY];
+          moveToTarget(targetPos,currentPos);
+          break;
+        }
+        case "down":{
+          if(this.posY >= this.world.gridMaxY+1)break;
+          var targetPos = this.world.grid[this.posX][this.posY+1];
+          moveToTarget(targetPos,currentPos);
+          break;
+        }
+        case "left":{
+          if(this.posX <= 0)break;
+          var targetPos = this.world.grid[this.posX-1][this.posY];
+          moveToTarget(targetPos,currentPos);
+          break;
+        }
+      }
 
+      this.drawImage();
+
+      function moveToTarget(target,current){
+        if(target.block.allowPeople && !target.hasPeople){
+          target.people = current.people;
+          current.people.posX = target.block.posX;
+          current.people.posY = target.block.posY;
+          target.hasPeople = true;
+          current.people = "";
+          current.hasPeople = false;
+          current.block.drawImage();
+        }
+      }
     }
 
     this.makeDecision = function(){
@@ -98,6 +153,12 @@ define(function(){
 
     this.attack = function(people){
 
+    }
+
+    this.takeJob = function(job){
+      console.log("takeJob");
+      job.assignTo(this);
+      this.jobs.push(job);
     }
 
   }

@@ -43,7 +43,10 @@ define(['world'], function(World){
 
     this.makeDecision = function(){
       // this function give a list of jobs
-      return new Patrol(this, 1, {'left': 12, 'top':8, 'width': 6, 'height': 6}, 50);
+      // return new Patrol(this, 1, {'left': 12, 'top':8, 'width': 6, 'height': 6}, 50);
+      // evalute current status
+      
+      // generate current work list
     }
   }
 

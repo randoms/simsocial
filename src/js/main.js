@@ -26,14 +26,16 @@ require(['world', 'town', 'people'], function(World, Town, People){
   var rawCity = new Town.Town(mworld, 12, 8, "Raw");
   var adward = new People.People(mworld, 15, 15, "Adward");
   var patrolJob = rawCity.makeDecision();
+  console.log(patrolJob);
   adward.takeJob(patrolJob);
 
-
-  setInterval(function(){
+  function draw(){
+    mworld.update();
     window.requestAnimationFrame(function(){
-      mworld.update();
+      draw();
     });
-  },15)
-
+  }
   
+
+  draw();
 })

@@ -1,4 +1,4 @@
-define(['world'], function(World){
+define(['world', 'utils'], function(World, Utils){
 
   function Town(world, posX, posY, name){
 
@@ -18,9 +18,9 @@ define(['world'], function(World){
     this.rentingPrice = 0; // renting money of the house
     this.neighbor = []; // the info about nearby town
 
-    // town info
+    // town info, including product rate, items, etc in each block
     this.info = []; // map info the town has collected
-
+    this.infoUnfreshness = 1; // represent the unfreshness of info, in range [0,1]
     // update related
     this.date = 0; // the date of the town
 
@@ -35,18 +35,66 @@ define(['world'], function(World){
         new World.Stone(this.world, posX+i,posY + j);
       }
     }
+    // add to world update list
+    this.world.updateTargetList.push(this);
 
     this.update = function(){
       // this function update the status of the town, including income, outcome, people, working people,
       // update after all people in it updated
+      console.log("updated");
+      this.makeDecision();
+      this.date ++;
     }
 
     this.makeDecision = function(){
       // this function give a list of jobs
-      // return new Patrol(this, 1, {'left': 12, 'top':8, 'width': 6, 'height': 6}, 50);
+      //return new Patrol(this, 1, {'left': 12, 'top':8, 'width': 6, 'height': 6}, 50);
       // evalute current status
-      
+      calculateUnfreshness();
+      console.log('unfreshness', this.infoUnfreshness);
+      // TODO: personality related
+      if(this.infoUnfreshness > 0.8){
+        // need someone to gather infomation
+        return [new Patrol(this, 1, {'left': this.posX - 1, 'top': this.posY - 1, 'width': 8, 'height': 8}, 50)];
+      }
+      return [];
+      // calculate infomation freshness
       // generate current work list
+    }
+
+    var that = this;
+    function calculateUnfreshness(){
+      // nearby blocks in the town
+      if(that.info.length == 0){
+        // first time to calculate
+        // get target grids
+        for(var i=0;i<8;i++){
+          for(var j=0;j<8;j++){
+            if(that.posX + i -1 < 0 || that.posX + i -1 > that.world.gridMaxX
+              || that.posY + j -i < 0 || that.posY + j -1 > that.world.gridMaxY){
+              // exceed the world limit
+              break;
+            }
+            that.info.push({
+              'lastUpdateTime': 0,
+              'content': {},
+              'pos':{
+                'posX': 1,
+                'posY': 1,
+              }
+            })
+          }
+        }
+      }
+
+      // start calculation
+      var unfreshness = _(that.info).map(function(item){
+        var timeDiff = that.date - item.lastUpdateTime;
+        var blockUnfreshness = 1 - 2/(Math.exp(timeDiff) + Math.exp(-timeDiff));
+        return blockUnfreshness;
+      })
+      that.infoUnfreshness =  Utils.average(unfreshness);
+      return that.infoUnfreshness;
     }
   }
 

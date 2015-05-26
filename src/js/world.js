@@ -1,4 +1,4 @@
-define(['jquery', 'Chart'], function($, Chart){
+define(['jquery', 'Chart', 'underscore'], function($, Chart, _){
   function World(context){
 
     this.interval = 60; // frame per update
@@ -7,10 +7,10 @@ define(['jquery', 'Chart'], function($, Chart){
     this.gridMaxX = 31;
     this.gridMaxY = 23;
     this.grid =[];
-    this.date = 0;
     this.context = context;
     this.flatness = 0.8;
     this.stablity = 0.98;
+    this.updateTargetList = [];
 
     var maxGrid = {
       'value': 0,
@@ -172,6 +172,13 @@ define(['jquery', 'Chart'], function($, Chart){
           }
         }
       }
+
+      // update other targets, like towns
+      _(this.updateTargetList).each(function(target){
+        if(typeof target.update != "undefined"){
+          target.update();
+        }
+      })
 
       //this.statistic();
     }

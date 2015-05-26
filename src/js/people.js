@@ -156,6 +156,10 @@ define(['world'], function(World){
     }
 
     this.takeJob = function(job){
+      if(typeof job.length != "undefined" && job.length == 0){
+        console.log("no job avaliable");
+        return;
+      }
       console.log("takeJob");
       job.assignTo(this);
       this.jobs.push(job);

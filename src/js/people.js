@@ -31,7 +31,6 @@ define(['world'], function(World){
     this.outcomeItems = [];
     this.breads = 0;
     this.jobs = [];
-    this.town = {};
 
 
     // personality
@@ -55,6 +54,7 @@ define(['world'], function(World){
 
     // nearby
     this.nearby = []; // the 8 near blocks
+    this.town = []; // visited towns
 
     this.drawImage = function(){
 
@@ -78,6 +78,14 @@ define(['world'], function(World){
       if(this.date == this.world.date)return;
       this.date = this.world.date;
       if(this.jobs.length != 0)this.jobs[0].work();
+      if(this.jobs.length == 0){
+        // not have a job yet, take a job
+        if(typeof this.takeJob != "undefined"){
+          // evaluate current status, try to find new job from nearby town
+          var mjob = this.findNewJob();
+          this.takeJob(mjob);
+        }
+      }
     }
 
     // update neighbor
@@ -139,6 +147,15 @@ define(['world'], function(World){
       }
     }
 
+    this.findNewJob = function(){
+      // just return the first job in the first town
+      if(this.town.length != 0 && this.town[0].publishedJobs.length != 0){
+        return [this.town[0].publishedJobs[0]];
+      }else {
+        return []; // no job found
+      }
+    }
+
     this.makeDecision = function(){
 
     }
@@ -159,6 +176,9 @@ define(['world'], function(World){
       if(typeof job.length != "undefined" && job.length == 0){
         console.log("no job avaliable");
         return;
+      }
+      if(typeof job.length != "undefined"){
+        job = job[0];
       }
       console.log("takeJob");
       job.assignTo(this);

@@ -28,7 +28,22 @@ define(['world', 'utils'], function(World, Utils){
     this.world = world;
     this.posX = posX;
     this.posY = posY;
+    this.publishedJobs = []; // jobs has been published, but still not been applied
 
+
+    this.getUnfressness = function(posX, posY){
+      if(this.info.length == 0)
+        return 1;
+      var res = "";
+      _(this.info).each(function(item){
+        if(item.posX == posX && item.posY == posY){
+          res = item.unfreshness;
+        }
+      })
+      if(res == "")
+        return 1;
+      return res;
+    }
 
     for(var i=0;i<6;i++){
       for(var j=0;j<6;j++){
@@ -41,9 +56,10 @@ define(['world', 'utils'], function(World, Utils){
     this.update = function(){
       // this function update the status of the town, including income, outcome, people, working people,
       // update after all people in it updated
-      console.log("updated");
+      if(this.date == this.world.date)
+        return;
+      this.date = this.world.date;
       this.makeDecision();
-      this.date ++;
     }
 
     this.makeDecision = function(){
@@ -53,13 +69,16 @@ define(['world', 'utils'], function(World, Utils){
       calculateUnfreshness();
       console.log('unfreshness', this.infoUnfreshness);
       // TODO: personality related
-      if(this.infoUnfreshness > 0.8){
-        // need someone to gather infomation
-        return [new Patrol(this, 1, {'left': this.posX - 1, 'top': this.posY - 1, 'width': 8, 'height': 8}, 50)];
-      }
-      return [];
       // calculate infomation freshness
       // generate current work list
+      if(this.infoUnfreshness > 0.8){
+        // need someone to gather infomation
+        if(this.publishedJobs.length == 0)
+          this.publishedJobs = [new Patrol(this, 1, {'left': this.posX - 1, 'top': this.posY - 1, 'width': 8, 'height': 8}, 0.8)];
+      }else {
+        this.publishedJobs = [];
+      }
+      return this.publishedJobs;
     }
 
     var that = this;
@@ -73,15 +92,16 @@ define(['world', 'utils'], function(World, Utils){
             if(that.posX + i -1 < 0 || that.posX + i -1 > that.world.gridMaxX
               || that.posY + j -i < 0 || that.posY + j -1 > that.world.gridMaxY){
               // exceed the world limit
-              break;
+              continue;
             }
             that.info.push({
-              'lastUpdateTime': 0,
-              'content': {},
+              'updateTime': 0,
+              'record': {},
               'pos':{
-                'posX': 1,
-                'posY': 1,
-              }
+                'posX': that.posX + i - 1,
+                'posY': that.posY + j - 1,
+              },
+              'unfreshness': 1,
             })
           }
         }
@@ -89,10 +109,14 @@ define(['world', 'utils'], function(World, Utils){
 
       // start calculation
       var unfreshness = _(that.info).map(function(item){
-        var timeDiff = that.date - item.lastUpdateTime;
+        var timeDiff = that.date - item.updateTime;
+        timeDiff = timeDiff / 20;
         var blockUnfreshness = 1 - 2/(Math.exp(timeDiff) + Math.exp(-timeDiff));
         return blockUnfreshness;
       })
+      for(var i=0,length=that.info.length;i<length;i++){
+        that.info[i].unfreshness = unfreshness[i];
+      }
       that.infoUnfreshness =  Utils.average(unfreshness);
       return that.infoUnfreshness;
     }
@@ -112,12 +136,11 @@ define(['world', 'utils'], function(World, Utils){
 
   }
 
-  function Patrol(from, income, area, updateInterval){
-    Job.apply(this, from, income, "patrol");
-
+  function Patrol(from, income, area, unfreshness){
+    Job.apply(this, [from, income, "patrol"]);
     this.patrolArea = area;
     this.patrolRecord = [];
-    this.updateInterval = updateInterval;
+    this.unfreshness = unfreshness;
 
     for(var i=0;i<area.width;i++){
       for(var j=0;j<area.height; j++){
@@ -125,11 +148,10 @@ define(['world', 'utils'], function(World, Utils){
           'updateTime': 0,
           'posX': area.left + i,
           'posY': area.top + j,
+          'unfreshness': 1,
         });
       }
     }
-
-    
 
     this.work = function(){
 
@@ -143,8 +165,8 @@ define(['world', 'utils'], function(World, Utils){
       };
 
       for(var i=0,length=this.patrolRecord.length; i<length; i++){
-        var updateTime = this.patrolRecord[i].updateTime;
-        if(updateTime < this.to.date - this.updateInterval || updateTime === 0){
+        var unfreshness = this.patrolRecord[i].unfreshness;
+        if(unfreshness > this.unfreshness){
           // need to update
           var posX = this.patrolRecord[i].posX;
           var posY = this.patrolRecord[i].posY;
@@ -175,6 +197,7 @@ define(['world', 'utils'], function(World, Utils){
       if(total === 0){
         return;
       }
+
       var upPosibility = targetCount.up/total;
       var rightPosibility = targetCount.right/total;
       var downPosibility = targetCount.down/total;
@@ -182,13 +205,19 @@ define(['world', 'utils'], function(World, Utils){
       var choice = Math.random();
       if(choice < upPosibility){
         this.to.move('up');
+        this.lastMove = "up";
       }else if(choice < upPosibility + rightPosibility){
         this.to.move('right');
+        this.lastMove = "right";
       }else if(choice < upPosibility + rightPosibility + downPosibility){
         this.to.move('down');
+        this.lastMove = "down";
       }else{
         this.to.move('left');
+        this.lastMove = "left";
       }
+
+      var that = this;
       
       // update neightbour info
       for(var i =-1; i<2; i++){
@@ -198,8 +227,20 @@ define(['world', 'utils'], function(World, Utils){
             if(this.patrolRecord[k].posX == this.to.posX + i && this.patrolRecord[k].posY == this.to.posY + j){
               this.patrolRecord[k].updateTime = this.to.date;
               this.patrolRecord[k].record = this.to.world.grid[this.patrolRecord[k].posX][this.patrolRecord[k].posY].block.getRecord();
+              // update unfreshness from towm
+              this.patrolRecord[k].unfreshness = this.from.getUnfressness(this.patrolRecord[k].posX, this.patrolRecord[k].posY);
             }
           }
+
+          // update town record
+          for(var k=0,length=this.from.info.length;k<length;k++){
+            if(this.from.info[k].pos.posX == this.to.posX + i && this.from.info[k].pos.posY == this.to.posY + j){
+              this.from.info[k].updateTime = this.to.date;
+              this.from.info[k].record = this.to.world.grid[this.from.info[k].pos.posX][this.from.info[k].pos.posY].block.getRecord();
+            }
+          }
+          // update people record
+          // is this needed?
         }
       }
     }

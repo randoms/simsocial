@@ -25,9 +25,7 @@ require(['world', 'town', 'people'], function(World, Town, People){
   //new World.Tree(mworld, 20, 10);
   var rawCity = new Town.Town(mworld, 12, 8, "Raw");
   var adward = new People.People(mworld, 15, 15, "Adward");
-  var patrolJob = rawCity.makeDecision();
-  console.log(patrolJob);
-  adward.takeJob(patrolJob);
+  adward.town.push(rawCity); // manuelly add adward to this town
 
   function draw(){
     mworld.update();
